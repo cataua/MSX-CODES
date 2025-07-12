@@ -1,0 +1,10 @@
+machine Panasonic_FS-A1FX 
+ext slotexpander
+ext Musical_Memory_Mapper
+ext scc+
+ext msxdos2 
+ext gfx9000 
+bind F12 cycle videosource
+plug joyporta mouse 
+plug printerport simpl 
+diska dsk/ 
