@@ -1,5 +1,8 @@
+    #include <stdio.h>
+    #include <string.h>
 #include "fusion-c/header/msx_fusion.h"
-#include <stdio.h>
+#include "fusion-c/header/vdp_graph1.h"
+#include "fusion-c/header/io.h"
 
 // Dimensões da tela (SCREEN 0 padrão: 40x24 colunas/linhas)
 #define SCREEN_WIDTH 80
@@ -17,46 +20,93 @@
 #define KEY_DOWN 31
 #define KEY_ENTER 13
 
+typedef struct {
+    const char* label;
+    const char* value;
+} OptionsType;
+
+OptionsType menuOptions[] = {
+    {"1. Opcao 1", "Executar Programa 1"},
+    {"2. Opcao 2", "Executar Programa 2"},
+    {"3. Opcao 3", "Executar Programa 3"},
+};
+
 void DrawBox(int x1, int y1, int x2, int y2) {
     int i, j;
     // Borda superior (caracteres ASCII: ┌, ─, ┐)
     Locate(x1, y1);
-    PrintChar(0x01);
-    PrintChar(0x0158); // ┌ (canto superior esquerdo)
+    Print("\x01\x58"); // ┌ (canto superior esquerdo)
     
-    for (i = x1 + 1; i < x2; i++) {
-        PrintChar(0x01); PrintChar(0x0157); // ─ (linha horizontal)
-    }
+    for (i = x1 + 1; i < x2; i++) Print("\x01\x57"); // ─ (linha horizontal)
     
-    PrintChar(0x01);
-    PrintChar(0x0159); // ┐ (canto superior direito)
+    Print("\x01\x59"); // ┐ (canto superior direito)
 
     // Bordas laterais (│)
     for (j = y1 + 1; j < y2; j++) {
-        Locate(x1, j); PrintChar(0x01); PrintChar(0x0156); // │ (linha vertical esquerda)
-        Locate(x2, j); PrintChar(0x01); PrintChar(0x0156); // │ (linha vertical direita)
+        Locate(x1, j); Print("\x01\x56"); // │ (linha vertical esquerda)
+        Locate(x2, j); Print("\x01\x56"); // │ (linha vertical direita)
     }
 
     // Borda inferior (└, ─, ┘)
     Locate(x1, y2);
-    PrintChar(0x01);
-    PrintChar(0x015A); // └ (canto inferior esquerdo)
+    Print("\x01\x5A"); // └ (canto inferior esquerdo)
     for (i = x1 + 1; i < x2; i++) {
-        PrintChar(0x01); PrintChar(0x0157); // ─ (linha horizontal)
+        // PrintChar(0x01); 
+        Print("\x01\x57"); // ─ (linha horizontal)
     }
-    PrintChar(0x01); PrintChar(0x015B); // ┘ (canto inferior direito)
+    Print("\x01\x5B"); // ┘ (canto inferior direito)
 }
 
-void CenterText(int y, const char* text) {
-    int x = (int)(SCREEN_WIDTH - StrLen(text)) / 2;
+void ShowMessage(int x, int y,const char* text)
+{
     Locate(x, y);
     Print(text);
 }
 
+void CenterText(int y, const char* text) {
+    int x = (int)(SCREEN_WIDTH - StrLen(text)) / 2;
+    ShowMessage(x, y, text);
+}
+
+void RightText(int y, const char* text) {
+    int x = (int)((SCREEN_WIDTH - 1) - StrLen(text));
+    ShowMessage(x, y, text);
+}
+
+void LeftText(int y, const char* text) {
+    int x = 1;
+    ShowMessage(x, y, text);
+}
+
+int PrintOptions(void) {
+    int totalFiles = 0;
+    char fileBuffer[255];
+    int n;
+    // int totalOptions = sizeof(menuOptions) / sizeof(menuOptions[0]);
+    int x = 3;
+    int y = 5;
+    n = FindFirst("*.COM", fileBuffer, 0);
+    for (;!n;)
+    {
+            Locate(x, y);
+            Print(fileBuffer);
+            y = y + 1;
+            totalFiles++;
+            n = FindNext(fileBuffer);
+    }
+    return totalFiles;
+    // for (int i = 0; i < totalOptions; i++) {
+    //     int x = 3;
+    //     int y = i + 5;
+    //     Locate(x, y);
+    //     Print(menuOptions[i].label);
+    // } 
+}
+
 void main(void) {
-    int opcao = 0;
+    int opcao = 1;
     int opcaoY = 5; // Posição Y inicial do menu
-    int opcaoYMax = 6; // Posição Y máxima do menu
+    int opcaoYMax = 5; // Posição Y máxima do menu
     int opcaoYAnt = (opcaoY - 1);
     SetColors(FOREGROUND_COLOR, BG_COLOR, BORDER_COLOR);
     Screen(0);
@@ -67,30 +117,31 @@ void main(void) {
     DrawBox(0, 0, (SCREEN_WIDTH - 1), 2);
     Locate(2, 1);
     CenterText(1, "=== APLICACAO MSX ===");
-
+    
     // 2. Área do Menu (linhas 3 a 20)
     DrawBox(0, 3, (SCREEN_WIDTH - 1), 19);
-    Locate(3, 5);
-    Print("1. Opcao 1");
-    Locate(3, 6);
-    Print("2. Opcao 2");
-    // ... (adicione mais itens do menu)
+    int totalFiles = PrintOptions();
 
     // 3. Footer (linhas 21 a 23)
     DrawBox(0, 20, (SCREEN_WIDTH - 1), 22);
     Locate(2, 21);
-    CenterText(21,"Pressione ENTER para selecionar");
+    LeftText(21,"Pressione ENTER para selecionar");
 
     // Cursor de escolha opcao
     Locate(2,opcaoY);
     Print(">"); // Cursor de seleção
     
+    // ShowDisplay();
     while(1) { 
         int mov = WaitKey();
         if (mov == KEY_UP) {
             opcaoYAnt = opcaoY; // Armazena a opção anterior
             opcaoY--;
-            if (opcaoY < 5) opcaoY = 5; // Limita a opção mínima
+            opcao--;
+            if (opcao < totalFiles) {
+                opcaoY = totalFiles; // Limita a opção mínima
+                opcao = 1; // Reseta a opção para o início
+            }
             Locate(2, opcaoYAnt);
             Print(" ");
             Locate(2, opcaoY);
@@ -100,20 +151,38 @@ void main(void) {
             opcaoYAnt = opcaoY; // Armazena a opção anterior    
             
             opcaoY++;
-            if (opcaoY > opcaoYMax) opcaoY = 5; // Limita a opção máxima e volta ao inicio
+            opcao++;
+            if (opcao > totalFiles) {
+                opcaoY = opcaoYMax; // Limita a opção máxima e volta ao inicio
+                opcao = 1; // Reseta a opção para o início
+            }
             Locate(2, opcaoYAnt);
             Print(" ");
             Locate(2, opcaoY);
             Print(">");
         }
         if (mov == KEY_ENTER) {
-            // Ação para a opção selecionada
+            Cls();
             Locate(2, 22);
-            Print("Opcao selecionada: ");
-            PrintChar(opcaoY - 4 + '0'); // Exibe o número da opção
+            Print("Opcao selecionada:\n");
+            // Ação para a opção selecionada
+            switch (opcao)
+            {
+                case 1:
+                    Print("Rodar programa 1");
+                break;
+                case 2:
+                    Print("Rodar programa 2");                
+                break;
+                case 3:
+                    Print("Rodar programa 3");
+                break;
+                default:
+                    Print("Opcao invalida");
+            }
             WaitKey(); // Mantém a tela aberta
+            return;
         }
     }    
-        // ShowDisplay();
 }
 
