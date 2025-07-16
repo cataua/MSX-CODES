@@ -1,5 +1,5 @@
-    #include <stdio.h>
-    #include <string.h>
+#include <stdio.h>
+#include <string.h>
 #include "fusion-c/header/msx_fusion.h"
 #include "fusion-c/header/vdp_graph1.h"
 #include "fusion-c/header/io.h"
@@ -25,11 +25,55 @@ typedef struct {
     const char* value;
 } OptionsType;
 
+
+char com_files[50][13];
+
 OptionsType menuOptions[] = {
     {"1. Opcao 1", "Executar Programa 1"},
     {"2. Opcao 2", "Executar Programa 2"},
     {"3. Opcao 3", "Executar Programa 3"},
 };
+
+void ExecuteCOMFile(const char *filename) {
+    int handle;
+    unsigned long size;
+    unsigned char *buffer;
+    
+    // // Abre o arquivo
+    // handle = Open(filename, O_RDONLY);
+    // if(handle == -1) {
+    //     Print("Erro ao abrir arquivo");
+    //     return;
+    // }
+    
+    // // Obtém tamanho
+    // size = Lseek(handle, 0, SEEK_END);
+    // Lseek(handle, 0, SEEK_SET);
+    
+    // // Aloca buffer na RAM (0x0100 para .COM)
+    // buffer = (unsigned char *)0x0100;
+    
+    // // Lê o arquivo
+    // if(Read(handle, buffer, size) != size) {
+    //     Print("Erro na leitura");
+    //     Close(handle);
+    //     return;
+    // }
+    
+    // Close(handle);
+    
+    // Executa o programa
+    // __asm
+    //     di           ; Desabilita interrupções
+    //     ld hl, 0x0100
+    //     jp (hl)      ; Salta para o programa
+    // __endasm;
+    
+    // // Se retornar (improvável para .COM)
+    // __asm
+    //     ei           ; Reabilita interrupções
+    // __endasm;
+}
 
 void DrawBox(int x1, int y1, int x2, int y2) {
     int i, j;
@@ -38,7 +82,7 @@ void DrawBox(int x1, int y1, int x2, int y2) {
     Print("\x01\x58"); // ┌ (canto superior esquerdo)
     
     for (i = x1 + 1; i < x2; i++) Print("\x01\x57"); // ─ (linha horizontal)
-    
+
     Print("\x01\x59"); // ┐ (canto superior direito)
 
     // Bordas laterais (│)
@@ -91,20 +135,15 @@ int PrintOptions(void) {
             Locate(x, y);
             Print(fileBuffer);
             y = y + 1;
+            strcpy(com_files[totalFiles], fileBuffer);
             totalFiles++;
             n = FindNext(fileBuffer);
     }
-    return totalFiles;
-    // for (int i = 0; i < totalOptions; i++) {
-    //     int x = 3;
-    //     int y = i + 5;
-    //     Locate(x, y);
-    //     Print(menuOptions[i].label);
-    // } 
+    return totalFiles; // Retorna o array de arquivos e o total de arquivos encontrados
 }
 
 void main(void) {
-    int opcao = 1;
+    int opcao = 0;
     int opcaoY = 5; // Posição Y inicial do menu
     int opcaoYMax = 5; // Posição Y máxima do menu
     int opcaoYAnt = (opcaoY - 1);
@@ -138,9 +177,9 @@ void main(void) {
             opcaoYAnt = opcaoY; // Armazena a opção anterior
             opcaoY--;
             opcao--;
-            if (opcao < totalFiles) {
-                opcaoY = totalFiles; // Limita a opção mínima
-                opcao = 1; // Reseta a opção para o início
+            if (opcao <= 0) {
+                opcaoY = 5 + totalFiles; // vai para o ultimo item da lista
+                opcao = totalFiles - 1;  // Reseta a opção para o fim da lista
             }
             Locate(2, opcaoYAnt);
             Print(" ");
@@ -152,7 +191,7 @@ void main(void) {
             
             opcaoY++;
             opcao++;
-            if (opcao > totalFiles) {
+            if (opcao >= totalFiles) {
                 opcaoY = opcaoYMax; // Limita a opção máxima e volta ao inicio
                 opcao = 1; // Reseta a opção para o início
             }
@@ -162,25 +201,15 @@ void main(void) {
             Print(">");
         }
         if (mov == KEY_ENTER) {
-            Cls();
-            Locate(2, 22);
-            Print("Opcao selecionada:\n");
-            // Ação para a opção selecionada
-            switch (opcao)
-            {
-                case 1:
-                    Print("Rodar programa 1");
-                break;
-                case 2:
-                    Print("Rodar programa 2");                
-                break;
-                case 3:
-                    Print("Rodar programa 3");
-                break;
-                default:
-                    Print("Opcao invalida");
+            // Executa o arquivo selecionado
+            if (opcao > 0 && opcao <= totalFiles) {
+                Cls();
+                Print("Opcao escolhida ");
+                PrintNumber(opcao);
+                // ExecuteCOMFile(com_files[opcao - 1]);
+            } else {
+                Print("Opcao invalida");
             }
-            WaitKey(); // Mantém a tela aberta
             return;
         }
     }    
