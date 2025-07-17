@@ -1,8 +1,10 @@
 {
   "cSpell.words": [
+    "cópia",
     "Desabilita",
     "programa",
     "Reabilita"
   ],
-  "editor.defaultFormatter": "ms-vscode.cpptools-extension-pack"
+  "editor.defaultFormatter": "ms-vscode.cpptools-extension-pack",
+  "C_Cpp.intelliSenseEngine": "disabled"
 }
